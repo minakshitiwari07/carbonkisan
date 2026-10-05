@@ -1,0 +1,11 @@
+import fs from "fs"; import path from "path"; import Database from "better-sqlite3"; import bcrypt from "bcryptjs"; import dotenv from "dotenv"; dotenv.config();
+const file=path.resolve(process.env.DB_FILE||"./data/carbonkisan.db"); fs.mkdirSync(path.dirname(file),{recursive:true}); export const db=new Database(file); db.pragma("foreign_keys=ON");
+db.exec(`CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,role TEXT NOT NULL DEFAULT 'farmer',name TEXT,mobile TEXT UNIQUE,email TEXT UNIQUE,password_hash TEXT NOT NULL,state TEXT,district TEXT,village TEXT,language TEXT DEFAULT 'Hindi',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS farms(user_id INTEGER PRIMARY KEY,area TEXT,unit TEXT,ownership TEXT,soil TEXT,location TEXT,main_crop TEXT,experience TEXT,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS crops(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,year TEXT,name TEXT,area TEXT,season TEXT,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS practices(user_id INTEGER NOT NULL,k TEXT NOT NULL,value TEXT,PRIMARY KEY(user_id,k),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS inputs(user_id INTEGER PRIMARY KEY,chem TEXT,chemq TEXT,org TEXT,orgq TEXT,pest TEXT,irr TEXT,wlog TEXT,wsave TEXT,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS documents(user_id INTEGER NOT NULL,k INTEGER NOT NULL,uploaded INTEGER DEFAULT 0,PRIMARY KEY(user_id,k),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS assessments(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,total INTEGER,categories TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS actions(user_id INTEGER NOT NULL,k TEXT NOT NULL,done INTEGER DEFAULT 0,PRIMARY KEY(user_id,k),FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE);`);
+if(!db.prepare("SELECT id FROM users WHERE email=?").get("admin@carbonkisan.demo")) db.prepare("INSERT INTO users(role,name,email,password_hash) VALUES('admin','CarbonKisan Admin','admin@carbonkisan.demo',?)").run(bcrypt.hashSync("admin123",10));
